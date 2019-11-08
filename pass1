@@ -1,6 +1,6 @@
 //wrote mainly by Sienna
 //metacharacters: +, #, @ note these
-void pass1(char *fname){
+void pass1(){
 int e;
 char d[1000];  //update this length to something appropriate
     //begin
