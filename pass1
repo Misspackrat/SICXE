@@ -1,0 +1,13 @@
+//wrote mainly by Sienna
+//metacharacters: +, #, @ note these
+void pass1(char *fname){
+int e;
+char d[1000];  //update this length to something appropriate
+    //begin
+      //read first input line
+      while(e>0){         //e will be 0 if parse returns a new line or -1 when EOF is found
+          e = parse(d);  //every call to parse will return one word or one metacharacter
+      }
+
+
+}
