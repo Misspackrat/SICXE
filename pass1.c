@@ -23,6 +23,7 @@ void pass1()
 	int locctr = 0; //location counter
 	int progLength = 0;
 	char buffer[MAX];  //update this length to something appropriate
+	bool format4 = false;
 
 	//open both files for writing in
 	//create new intermediate file
@@ -46,7 +47,10 @@ void pass1()
 		char str[20];
 		bool op = false; 
 		bool meta = false; 
-		bool format4 = false;
+		bool hasInput = true; 
+
+		if (length == 0)
+			hasInput = false;
 
 		FILE* optxtFile = fopen("opcode.txt", "r");
 		if (optxtFile == NULL)
@@ -55,7 +59,14 @@ void pass1()
 			exit(1);
 		}
 
-		while ((fgets(str, 20, optxtFile) != NULL) && (!op)) 
+		FILE* keywordFile = fopen("keywords.txt", "r");
+		if (keywordFile == NULL)
+		{
+			printf("Could not open keywords.txt");
+			exit(1);
+		}
+
+		while ((fgets(str, 20, optxtFile) != NULL) && (!op) && hasInput) 
 		{
 			//get rid of newline character at end of str
 			int len = strlen(str);
@@ -66,17 +77,14 @@ void pass1()
 			char* token = strtok(str," ");
 			while (token != NULL)
 			{
-				//printf("token %s \n", token);
-
-				//only looking for opcodes
+				//if buffer does match an opcode, set opcode to buffer
 				if (i == 0)
 				{
 					int val = strcmp(buffer, str);
-					//printf("buffer: %s, str: %s, val = %d\n", buffer, str,val);
 					if (val == 0)
 					{
 						op = true;
-						//printf("THEY ARE THE SAME\n");
+						strcpy(line.opcode, buffer);
 					}
 				}
 
@@ -86,25 +94,41 @@ void pass1()
 					if (op)
 					{
 						line.format = atoi(token); 
-						
 					}
 				}
 				
 				i++;
 				token = strtok(NULL," ");
 			}
-			//printf("buffer: %s, str: %s\n", buffer, str);
+
+			//looking for keywords
+			while ((fgets(str, 20, keywordFile) != NULL) && (!op) && hasInput)
+			{
+				//get rid of newline character at end of str
+				int len = strlen(str);
+				str[len - 1] = 0;
+
+				//tokenize to get format
+				char* token = strtok(str, " ");
+				while (token != NULL)
+				{
+					
+					//if buffer does match an opcode, set opcode to buffer
+					int val = strcmp(buffer, str);
+					if (val == 0)
+					{
+						op = true;
+						strcpy(line.opcode, buffer);
+					}
+					
+					token = strtok(NULL, " ");
+				}
+			}
 		}
 		fclose(optxtFile);
+		fclose(keywordFile);
 		
-		//if buffer does match an opcode, set opcode to buffer
-		//otherwise set label to buffer
-		if (op)
-		{
-			strcpy(line.opcode, buffer);
-			//printf("line.opcode %s\n", line.opcode);
-		}
-		else
+		if(!op && hasInput)
 		{
 			//check if buffer is a meta character
 			if (strcmp(buffer, "#") == 0)
@@ -117,7 +141,6 @@ void pass1()
 				{
 					meta = true;
 					format4 = true;
-					printf("made it to meta +\n");
 					strcpy(line.metaChar, buffer);
 				}
 				else
@@ -129,12 +152,12 @@ void pass1()
 
 			//check if buffer is an operand
 			bool operand = false; 
-			//printf("%s line.opcode\n\n", line.opcode);
-			if (!meta && ((line.opcode)[0] != '\0'))
+			if (!meta && hasInput && ((line.opcode)[0] != '\0'))
 			{
 				//if buffer is an operand, save buffer into operand 
 				operand = true; 
 				strcpy(line.operand, buffer);
+				//printf("%s line.operand\n\n", line.operand);
 			}
 
 			//save buffer into label if it is neither meta character or operand
@@ -143,54 +166,78 @@ void pass1()
 				  //if the label is not already in the symtab
 					  //write label with address into symtab file
 				 //////////////////////////////////////////////////////////
-			if (!meta && !operand) 
+			if (!meta && !operand && hasInput)
 			{
 				strcpy(line.label, buffer);
 				strcat(line.label, "\n");
 				fputs(line.label, symFile);
+				int len = strlen(line.label);
+				(line.label)[len - 1] = 0;
 			}
 		}
-			 
-		////////////////////////////////////////////////////////////////////////////////
 
-		//if 'START' is in opcode --> get from struct
-			  //save #operand at starting address (ex: START 1000)
-			  //initialize LOCCTR to starting address
-		if (strcmp(line.opcode, "START") == 0)
+		if (!hasInput)
 		{
-			locctr = atoi(line.operand);
+			char output[25];
+			itoa(locctr, output, 10);
+			strcat(output, " ");
+			if (strlen(line.label) > 0)
+			{
+				strcat(output, line.label);
+				strcat(output, " ");
+			}
+			if (strlen(line.metaChar) > 0)
+			{
+				strcat(output, line.metaChar);
+			}
+			strcat(output, line.opcode);
+			strcat(output, " ");
+			if (strlen(line.operand) > 0) 
+			{
+				strcat(output, line.operand);
+				strcat(output, "\n");
+			}
+				
+			fputs(output, interFile);
+			//printf("buffer %s\nlabel %s, opcode %s, format %d, meta %s, operand %s, ", buffer, line.label, line.opcode, line.format, line.metaChar, line.operand);
+			//printf("locctr: %d\n", locctr);
+			//printf("length %d\n\n", length);
 		}
+		
 
-		//forces locctr to update only once per opcode
-		if (op)
+		if (length == 0) 
 		{
+			////////////////////////////////////////////////////////////////////////////////
+
+			//if 'START' is in opcode --> get from struct
+			//save #operand at starting address (ex: START 1000)
+			//initialize LOCCTR to starting address
+			int val = strcmp(line.opcode, "START");
+			if (strcmp(line.opcode, "START") == 0)
+			{
+				locctr = atoi(line.operand);
+			}
+
 			//write line to intermediate file = LOCCTR + (optional)LABEL + OPCODE + OPERAND --> get data from struct
-			printf("buffer %s, opcode %s, format %d, ", buffer, line.opcode, line.format);
-			printf("locctr: %d\n", locctr);
+			//printf("buffer %s, opcode %s, format %d, meta %s, operand %s, ", buffer, line.opcode, line.format, line.metaChar, line.operand);
+			//printf("locctr: %d\n", locctr);
+
+			//update LOCCTR
+			locctr += line.format;
 
 			if (format4)
 			{
 				locctr++;
-				printf("format4 %d", locctr);
+				format4 = false; 
 			}
-	
-			//update LOCCTR
-			locctr += line.format; 
-		}
 
-		//reset line struct to empty all current data
-		if (length == 0)
-		{
+			//reset line struct to empty all current data
 			(line.label)[0] = '\0';
 			(line.opcode)[0] = '\0';
 			(line.operand)[0] = '\0';
 			(line.metaChar)[0] = '\0';
 			line.format = 0;
 		}
-		
-
-		  //read next input line --> (already done with do-while loop)
-
 	}
 
 	//after writing the last line to the intermediate file 
