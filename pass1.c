@@ -179,7 +179,20 @@ void pass1()
 		if (!hasInput)
 		{
 			char output[25];
-			itoa(locctr, output, 10);
+			bool base = false; 
+
+			//checking if opcode is equal to BASE,
+			//if it is then doent print location
+			if (strcmp(line.opcode, "BASE") == 0)
+			{
+				base = true; 
+				strcpy(output, line.opcode);
+				strcat(output, " ");
+				strcat(output, line.operand);
+			}
+			else
+				itoa(locctr, output, 10);
+			
 			strcat(output, " ");
 			if (strlen(line.label) > 0)
 			{
@@ -190,6 +203,7 @@ void pass1()
 			{
 				strcat(output, line.metaChar);
 			}
+			
 			strcat(output, line.opcode);
 			strcat(output, " ");
 			if (strlen(line.operand) > 0) 
@@ -213,10 +227,19 @@ void pass1()
 			//if 'START' is in opcode --> get from struct
 			//save #operand at starting address (ex: START 1000)
 			//initialize LOCCTR to starting address
-			int val = strcmp(line.opcode, "START");
 			if (strcmp(line.opcode, "START") == 0)
 			{
 				locctr = atoi(line.operand);
+			}
+
+			if (strcmp(line.opcode, "RESW") == 0)
+			{
+				locctr += (3 * atoi(line.operand));
+			}
+
+			if (strcmp(line.opcode, "RESB") == 0)
+			{
+				locctr += atoi(line.operand);
 			}
 
 			//write line to intermediate file = LOCCTR + (optional)LABEL + OPCODE + OPERAND --> get data from struct
