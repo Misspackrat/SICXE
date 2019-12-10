@@ -27,7 +27,6 @@ struct symbol findSymbol(struct symbol *table, char *name);
 struct opcode findOpcode(struct opcode *table, char *mnuemonic);
 void toBinary(int decimal, char *buffer);
 int toDecimal(char* binary);
-void printTable(struct opcode *table);
 
 //opcode.txt is formatted as mnuemonic, opcode, format
 struct opcode
@@ -43,18 +42,15 @@ struct symbol
     int loc;
 };
 
+//my main code for testing purposes
 int main()
 {
     //pointer to opcodes
     struct opcode *cptr = readTableData();
     struct symbol *sptr = readSymTab();
-    
-    /*for(int i = 0; i < 3; i++)
-    {   
-        printf("%d. mnuemonic: %s, location: %d \n",(i+1),sptr[i].name, sptr[i].loc);
-    }*/
     generateObjectCode(cptr,sptr);
 }
+
 //read table data method, used to read opcode.txt and make an array of opcodes
 struct opcode* readTableData()
 {
@@ -80,10 +76,12 @@ struct opcode* readTableData()
     
     char buffer[4096];
     int length = 0;
-
+    
+    //go through all 59 codes
     while(count < sizeof(codes)/sizeof(codes[0]))
     {
         length = parse(buffer);
+        //if its a mnuemonic
         if(!first && length != 0)
         {
             char *temp;
@@ -94,6 +92,7 @@ struct opcode* readTableData()
         }
         else
         {
+            //if its and opcode
             if(first & !second)
             {
                 int val = (int)strtol(buffer, NULL, 16);
@@ -102,6 +101,7 @@ struct opcode* readTableData()
             }
             else
             {
+                //otherwise it must be the format
                 if(first && second  && length != 0)
                 {
                     int val = atoi(buffer);
@@ -117,6 +117,7 @@ struct opcode* readTableData()
     return codes;
 }
 
+//this function reads in the symbol table and returns a point to it
 struct symbol* readSymTab()
 {
     //open the file
@@ -126,6 +127,7 @@ struct symbol* readSymTab()
     bool first = false;   
     bool fin = false;
     
+    //open symtab here
     if((fptr = open("testsymtab.txt",O_RDONLY))<0){
         perror("FILE NOT FOUND");
         exit(1);
@@ -136,15 +138,17 @@ struct symbol* readSymTab()
     char buffer[4096];
     int length = 0;
 
+    //loop til we reach the end
     while(!fin)
     {
         length = parse(buffer);
         if(strcmp(buffer, "TABLEFIN") == 0)
-            fin = true;
+            fin = true;//checking for my special flag at the end
         else
         {
             if(length > 0)
             {
+                //if we havent seen the first token on the line its the name
                 if(!first)
                 {
                     char *temp;
@@ -155,27 +159,23 @@ struct symbol* readSymTab()
                 }
                 else
                 {
+                    //if we have seen the first token then it must be the location
                     int val = (int)strtol(buffer, NULL, 16);
                     syms[count].loc = val;
                     first = false;
                     count++;
                 }
             }
-        } 
-   
-            
+        }           
     }
     
    length = parse(buffer);
     
     syms[count].name = "TABLEFIN";
-    /*for(int i = 0; i < count; i++)
-    {
-        printf("symbol %s is at location %d \n", syms[i].name, syms[i].loc);
-    }*/
     return syms; 
 }
 
+//generates the object code from pass 1 file, saves it into objectcode.txt
 void generateObjectCode(struct opcode *table, struct symbol *syms)
 {
     //open pass 1
@@ -186,6 +186,8 @@ void generateObjectCode(struct opcode *table, struct symbol *syms)
     }
     
     dup2(fptr,STDIN_FILENO);//file opened
+    
+    //create and open file to write to    
     FILE* fileWrite;
     fileWrite = fopen("objectcode.txt","w");
     char buffer[4096];
@@ -222,16 +224,18 @@ void generateObjectCode(struct opcode *table, struct symbol *syms)
     int ta = 0;
     int dest;
     
+    //reads until end of file is found
     while(length != -1)
     {
-        //printf("beiningin dest is %d",dest);
+        //get the next token
         length = parse(buffer);
-        //printf("%s is length %d\n",buffer, length);
+        
+        //at the end of a line, start processing it as a whole
         if(length == 0)
         { 
+            //if not immediate or indirect addressing set the flags for simple
             if(!n && !i)
             {
-                //printf("set simple\n");
                 n = true;
                 i = true;
                 if(!b && !e)
@@ -240,15 +244,11 @@ void generateObjectCode(struct opcode *table, struct symbol *syms)
             
             int flags[7];
             getFlagNum(n,i,x,b,p,e,flags);
-            //printf("dest is %d and ta is %d\n",dest,ta);
             if(!destSet && !e)
-{
                 dest = ta - (PC+format);
-                //printf("ping!!! dest is %d - %d\n",ta,PC);
-}
-            //printf("dest is %d\n",dest);
-            //printf("format is %d\n", format);
+
             char writeBuff[16];
+            //generate object codes based on the formats
             switch(format)
             {
                     case 1:
@@ -261,33 +261,28 @@ void generateObjectCode(struct opcode *table, struct symbol *syms)
                         format3(op, flags , dest, writeBuff);
                         break;
                     case 4:
-                        //printf("dest is %d\n",dest);
                         format4(op, flags, dest, writeBuff);
                         break;
             }
             
             
-            //write opcode to file
+            //write lines to the file
             fputs(line, fileWrite);
-            if(format != 0){
-            fputs(writeBuff, fileWrite);
-            format = 0;}
+            //object code was generated
+            if(format != 0)
+            {
+                fputs(writeBuff, fileWrite);
+                format = 0;
+            }
             fputc('\n',fileWrite);
             
+            //reset flags and values
             n = false;
             i = false;
             x = false;
             b = false;
             p = false;
             e = false;
-
-            /*printf("n is %d ", n);
-            printf("i is %d ", i);
-            printf("x is %d ", x);
-            printf("b is %d ", b);
-            printf("p is %d ", p);
-            printf("e is %d\n ", e);*/
-            
             dest = 0;
             ta = 0;
             destSet = false;
@@ -295,24 +290,25 @@ void generateObjectCode(struct opcode *table, struct symbol *syms)
             codeNotSet = true;
             onLDB = false;
             memset(line, 0, 4096);
-            //printf("cleared\n");
 
         }
         else
         {
+            //keep a copy of the line as we go
             strcat(line,buffer);
             strcat(line, " ");
-            //printf("line is %s \n",line);
+
+            //set the pc
             if(!first)
             {
                 PC = (int)strtol(buffer, NULL, 16);
-                //printf("pc is %d\n",PC);
                 first = true;
             }
+
+            //search for which opcode to use
             if(codeNotSet)
             {
                 struct opcode temp = findOpcode(table, buffer);
-                //printf("buffer is  %s and the mnuemonic is %s\n", buffer, temp.mnuemonic);
                 if(strcmp(temp.mnuemonic, "NO") != 0)
                 {
                     //found a mnuemonic
@@ -320,7 +316,7 @@ void generateObjectCode(struct opcode *table, struct symbol *syms)
                         format = temp.format;
                     op = temp.opcode;
                     codeNotSet = false;
-                    //printf("op is %d\n",op);
+
                     //case specific things for each mnuemonic
                     if(strcmp(temp.mnuemonic, "TIXR") == 0)
                         reg1 = 1;
@@ -341,12 +337,10 @@ void generateObjectCode(struct opcode *table, struct symbol *syms)
 
             }
             
+            //find the target address based on a location from the symbol table
             struct symbol sym = findSymbol(syms, buffer);
-           // printf("buffer is %s and syms name is %s\n",buffer, sym.name);
             if(!destSet && strcmp(sym.name, "TABLEFIN") != 0 && !codeNotSet)
             {
-                //printf("the sym name is %s\n",sym.name);
-                //printf("the loc is %d\n",sym.loc);
                 ta = sym.loc;
 
                 if(watchForB && ta > 4095 && !onLDB && !e)
@@ -355,24 +349,22 @@ void generateObjectCode(struct opcode *table, struct symbol *syms)
                     ta = ta - regB;
                     dest = ta;
                     destSet = true;
-                    //printf("base things\n");
                 }
                 if(e)
                 {
                     destSet = true;
                     dest = ta;
                 }
-                //printf("the target address is %d\n", ta);
-                //destSet = true;
             }
 
+            //set B register for base relative
             if(setB && strcmp(sym.name, "TABLEFIN") != 0)
             {
                 regB = sym.loc;
                 setB = false;
             }
 
-            //set reg numbers for format 2
+            //set register numbers for format 2
             if(format == 2)
             {
                 if(reg2 == 0)
@@ -425,124 +417,97 @@ void generateObjectCode(struct opcode *table, struct symbol *syms)
             if(strcmp(buffer,"@") == 0)
             {
                 n = true;
-                //printf("indirect\n");
             }
             if(strcmp(buffer,"#") == 0)
             {
                 i = true;
                 lastWasI = true;
-                //printf("immediate\n");
             }
             if(strcmp(buffer,"X") == 0)
             {
                 x = true;
-                //printf("x is found \n");
             }
             if(strcmp(buffer,"+") == 0)
             {
                 e = true;
                 format = 4;
-                //printf("+ is found \n");
             }
-        
+            
+            //take care of immediate addressing
             if(lastWasI)
             {
                 if(strcmp(buffer,"#") != 0){
                 struct symbol sym = findSymbol(syms, buffer);
                 if(strcmp(sym.name, "TABLEFIN") != 0)
                 {
-                    //printf("here\n");
                     dest = sym.loc;
-                }else{
-                dest = (int)strtol(buffer, NULL, 16);}
-                //printf("dest is immediate: %d\n",dest);
-                destSet = true;
-                lastWasI = false;
+                }
+                else
+                {
+                    dest = (int)strtol(buffer, NULL, 16);}
+                    destSet = true;
+                    lastWasI = false;
                 }
             }   
         }
     }    
     
-    fclose(fileWrite);
+    fclose(fileWrite);//close file for objectcode
 }
 
+//single byte object code converter (returns into char pointer)
 void format1(int opcode, char *write)
 {
-    //char str[5];
     sprintf(write, "%04x",opcode);
-    //printf("format 1 object code is %s\n", str);
-    //write = str;
 }
 
+//2 byte object code converter (returns into char pointer)
 void format2(int opcode, int reg1, int reg2, char *write)
 {
-    //char str[9];
     sprintf(write, "%02x%01x%01x", opcode, reg1, reg2);
-    //printf("format 2 object code is %s\n", str);
-    //write = str;
 }
 
+//3 byte object code converter (returns into char pointer)
 void format3(int opcode, int flags[6], int dest, char *write)
 {   
     char opStr[32];
     toBinary(opcode, opStr);
-    //printf("opcode %d is %s in binary\n", opcode, opStr);
     opStr[6] = '\0';
-    //printf("opcode with last two gone is %s \n", opStr);
+
     for(int i = 0; i < 6; i ++)
     {
         opStr[6+i] = flags[i]+'0';
-        //printf("%c",opStr[6+i]);
     }
     opStr[12] = '\0';
-    //printf("opcode + flags in binary is %s \n", opStr);
+
     int code = toDecimal(opStr);
-    //printf("converted code is %03x in hex\n", code);
-    /*if(dest < 0)
-        dest = dest + 0xFFFFF000;*/
-    /*base =  
-    while(dest < -4095)
-    {
-        dest = dest%base;
-    }*/
-    //printf("dest is %03x in hex\n", (unsigned)dest);
-    //char str[9];
+    //if the dest is negative get rid of pesky leading zeros
     if(dest < 0)
     {
-    unsigned char destC[9];
-    sprintf(destC, "%03x",dest);
-    char *truncate = &destC[5];
-    //printf("the cure is %s\n",truncate);
-    sprintf(write, "%03x%s", code, truncate);
+        unsigned char destC[9];
+        sprintf(destC, "%03x",dest);
+        char *truncate = &destC[5];
+        sprintf(write, "%03x%s", code, truncate);
     }
     else
-    sprintf(write, "%03x%03x", code, dest);
-    //printf("format 3 opcode is %s\n",str);
-    //write = str;
+        sprintf(write, "%03x%03x", code, dest);
 }
 
+//extended format object code converter (returns into char pointer)
 void format4(int opcode, int flags[6], int dest, char *write)
 {
-    //printf("format 4\n");
     char opStr[32];
     toBinary(opcode, opStr);
-    //printf("opcode %d is %s in binary\n", opcode, opStr);
     opStr[6] = '\0';
-    //printf("opcode with last two gone is %s \n", opStr);
+
     for(int i = 0; i < 6; i ++)
     {
         opStr[6+i] = flags[i]+'0';
-        //printf("%c",opStr[6+i]);
     }
+
     opStr[12] = '\0';
-    //printf("opcode + flags in binary is %s \n", opStr);
     int code = toDecimal(opStr);
-    //printf("converted code is %03x in hex\n", code);
-    //printf("dest is %05x in hex\n", dest);
-    //char str[9];
     sprintf(write, "%03x%05x", code,dest);
-    //printf("format 4 opcode is %s\n",str);
-    //write = str;
 }
 
 //sets an array of ones and zeros representing the flags
@@ -573,6 +538,8 @@ void getFlagNum(bool n, bool i, bool x, bool b, bool p, bool e, int *nums)
     else
         nums[5] = 0;
 }
+
+//searches through the opcodes to get information about the mneumonic
 struct opcode findOpcode(struct opcode *table, char *mnuemonic)
 {
     for(int i = 0; i < 59; i++)
@@ -589,6 +556,7 @@ struct opcode findOpcode(struct opcode *table, char *mnuemonic)
     return no;
 }
 
+//searches through the symbol table and checks if the given name is in there
 struct symbol findSymbol(struct symbol *table, char *name)
 {
     int i = 0;
@@ -600,10 +568,11 @@ struct symbol findSymbol(struct symbol *table, char *name)
         }
         i++;
     }
-    
+    //returns tablefin (my special flag)
     return table[i];
 }
 
+//converts a decimal number into a binary string
 void toBinary(int decimal, char* buffer)
 {
     int binary[32];
@@ -611,7 +580,6 @@ void toBinary(int decimal, char* buffer)
     int i = 0;
     int t = 0;
     
-
     while(decimal > 0)
     {
         binary[i] = decimal%2;
@@ -619,10 +587,13 @@ void toBinary(int decimal, char* buffer)
         i++;
     }
     
+    //add leadin zeros
     while(i < 8)
     {
         binary[i++] = 0;
     }
+    
+    //reverse the numbers
     char binStr [i];
     for(int j = i -1; j >=0; j--)
     {
@@ -634,6 +605,7 @@ void toBinary(int decimal, char* buffer)
     strncpy(buffer,binStr, t+1);
 }
 
+//converts a binary string into decimal form
 int toDecimal(char* binary)
 {
     long num = atol(binary);
@@ -653,10 +625,3 @@ int toDecimal(char* binary)
     return decimal;
 }
 
-void printTable(struct opcode *table)
-{
-    for(int i = 0; i < 59; i++)
-    {   
-        printf("%d. mnuemonic: %s, opcode: %d, format:%d\n",(i+1),table[i].mnuemonic, table[i].opcode, table[i].format);
-    }
-}
