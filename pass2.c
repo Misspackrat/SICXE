@@ -208,26 +208,57 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
     bool destSet = false;
     bool first = false;
     bool codeNotSet = true;
+    bool setA = false;
     bool watchForB = false;
     bool setB = false;
     bool onLDB = false;
-    int regA = 0;
-    int regX = 0;
-    int regE = 0;
-    int regL = 0;
-    int regB = 0;
-    int regS = 0;
-    int regT = 0;
+    bool setL = false;
+    bool setX = false;
+    bool setS = false;
+    bool setT = false;
+    bool setF = false;
+    bool reg2Set = false;
+    bool reg1Set = false;
+
+    //format 2 commands
+    bool ADDR = false;
+    bool CLEAR = false;
+    bool COMPR = false;
+    bool DIVR = false;
+    bool MULR = false;
+    bool RMO = false;
+    bool SHIFTL = false;
+    bool SHIFTR = false;
+    bool TIXR = false;
+
+    int regA = 0;//0
+    int regX = 0;//1
+    int regL = 0;//2
+    int regB = 0;//3
+    int regS = 0;//4
+    int regT = 0;//5
     int reg1 = 0;
     int reg2 = 0;
-    float regF = 0;
-    int PC = 0;
+    int regF = 0;//6
+    int PC = 0;//8
     int lastPC = 0;
-    int SW = 0;
+    int SW = 0;//9
     int format = 0;
     int op = 0;
     int ta = 0;
     int dest;
+    
+    //setting registers to pointeres
+    int *registers[10];
+    registers[0] = &regA;
+    registers[1] = &regX;
+    registers[2] = &regL;
+    registers[3] = &regB;
+    registers[4] = &regS;
+    registers[5] = &regT;
+    registers[6] = &regF;
+    registers[8] = &PC;
+    registers[9] = &SW;
     
     //reads until end of file is found
     while(length != -1)
@@ -323,8 +354,52 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
                     codeNotSet = false;
 
                     //case specific things for each mnuemonic
+
+                    //format 2
+                    if(strcmp(temp.mnuemonic, "ADDR") == 0)
+                    {
+                        ADDR = true;
+                    }
+                    if(strcmp(temp.mnuemonic, "CLEAR") == 0)
+                    {
+                        CLEAR = true;
+                    }
+                    if(strcmp(temp.mnuemonic, "COMPR") == 0)
+                    {
+                        COMPR = true;
+                    }
+                    if(strcmp(temp.mnuemonic, "DIVR") == 0)
+                    {
+                        DIVR = true;
+                    }
+                    if(strcmp(temp.mnuemonic, "MULR") == 0)
+                    {
+                        MULR = true;
+                    }
+                    if(strcmp(temp.mnuemonic, "RMO") == 0)
+                    {
+                        RMO = true;
+                    }
+                    if(strcmp(temp.mnuemonic, "SHIFTL") == 0)
+                    {
+                        SHIFTL = true;
+                        reg2Set = true;
+                    }
+                    if(strcmp(temp.mnuemonic, "SHIFTR") == 0)
+                    {
+                        SHIFTR = true;
+                        reg2Set = true;
+                    }
                     if(strcmp(temp.mnuemonic, "TIXR") == 0)
-                        reg1 = 1;
+                    {
+                        TIXR = true;
+                        reg2 = 0;
+                        reg2Set = true;
+                    }
+                    if(strcmp(temp.mnuemonic, "LDA") == 0)
+                    {
+                       setA = true; 
+                    } 
                     if(strcmp(temp.mnuemonic, "LDB") == 0)
                     {
                         watchForB = true;    
@@ -337,7 +412,8 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
                         n = true;
                         i = true;
                     }
-                        
+                    
+                         
                 }
 
             }
@@ -372,7 +448,7 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
             //set register numbers for format 2
             if(format == 2)
             {
-                if(reg2 == 0)
+                if(!reg2Set)
                 {
                     if(buffer[0] == 'A')
                         reg2 = 0;
@@ -395,26 +471,92 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
                 }
                 else
                 {
-                    if(reg1 == 0){
-                     if(buffer[0] == 'A')
-                        reg1 = 0;
-                    if(buffer[0] == 'X')
-                        reg1 = 1;
-                    if(buffer[0] == 'L')
-                        reg1 = 2;
-                    if(buffer[0] == 'B')
-                        reg1 = 3;
-                    if(buffer[0] == 'S')
-                        reg1 = 4;
-                    if(buffer[0] == 'T')
-                        reg1 = 5;
-                    if(buffer[0] == 'F')
-                        reg1 = 6;
-                    if(strcmp(buffer,"PC") == 0 || strcmp(buffer,",PC") == 0 )
-                        reg1 = 8;
-                    if(strcmp(buffer,"SW") == 0 || strcmp(buffer,",SW") == 0 )
-                        reg1 = 9;
-                }}
+                    if(!reg1Set){
+                        if(buffer[0] == 'A')
+                            reg1 = 0;
+                        if(buffer[0] == 'X')
+                            reg1 = 1;
+                        if(buffer[0] == 'L')
+                            reg1 = 2;
+                        if(buffer[0] == 'B')
+                            reg1 = 3;
+                        if(buffer[0] == 'S')
+                            reg1 = 4;
+                        if(buffer[0] == 'T')
+                            reg1 = 5;
+                        if(buffer[0] == 'F')
+                            reg1 = 6;
+                        if(strcmp(buffer,"PC") == 0 || strcmp(buffer,",PC") == 0 )
+                            reg1 = 8;
+                        if(strcmp(buffer,"SW") == 0 || strcmp(buffer,",SW") == 0 )
+                            reg1 = 9;
+                        
+                        reg1Set = true;
+                    }
+                   
+                    int n;
+                    if(reg1Set && (SHIFTL || SHIFTR))
+                    {
+                        int val = atoi(buffer);
+                        n = val;
+                    }
+                    /*                     
+                    bool ADDR = false;
+                    bool CLEAR = false;
+                    bool COMPR = false;
+                    bool DIVR = false;
+                    bool MULR = false;
+                    bool RMO = false;
+                    bool SHIFTL = false;
+                    bool SHIFTR = false;
+                    bool TIXR = false;*/
+                    if(ADDR)
+                    {
+                        *registers[reg2] = reg2 + reg1;
+                        ADDR = false;
+                    }
+                    if(CLEAR)
+                    {
+                        *registers[reg1] = 0;
+                        CLEAR = false;
+                    }
+                    if(COMPR)
+                    {
+                        *registers[9] = *registers[reg2] - *registers[reg1];
+                        COMPR = false;
+                    }
+                    if(DIVR)
+                    {
+                        *registers[reg2] = *registers[reg2] / *registers[reg1];
+                        DIVR = false;
+                    }
+                    if(MULR)
+                    {
+                        *registers[reg2] = *registers[reg2] * *registers[reg1];
+                        MULR = false;
+                    }
+                    if(RMO)
+                    {
+                        *registers[reg2] = *registers[reg1];
+                        RMO = false;
+                    }
+                    if(SHIFTL)
+                    {
+                        *registers[reg1] = *registers[reg1] << n-1;
+                        SHIFTL = false;
+                    }   
+                    if(SHIFTR)
+                    {
+                        *registers[reg1] = *registers[reg1] >> n-1;
+                        SHIFTR = false;
+                    }
+                    if(TIXR)
+                    {
+                        *registers[9] = *registers[reg2] - *registers[reg1];
+                        *registers[reg2] = *registers[reg1] + 1;
+                        TIXR = false;
+                    }
+                }
 
             }
 
