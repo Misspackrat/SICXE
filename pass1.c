@@ -166,13 +166,19 @@ void pass1()
 				  //if the label is not already in the symtab
 					  //write label with address into symtab file
 				 //////////////////////////////////////////////////////////
-			if (!meta && !operand && hasInput)
+			if (!meta && !operand && hasInput && (strlen(buffer) > 0))
 			{
+				char out[MAX]; 
+				char temp[MAX];
+
 				strcpy(line.label, buffer);
-				strcat(line.label, "\n");
-				fputs(line.label, symFile);
-				int len = strlen(line.label);
-				(line.label)[len - 1] = 0;
+				strcpy(out, line.label);
+				strcat(out, " ");
+				strcat(out, itoa(locctr, temp, 16));
+				strcat(out, "\n");
+				fputs(out, symFile);
+				//int len = strlen(line.label);
+				//(line.label)[len - 1] = 0;
 			}
 		}
 
@@ -181,9 +187,17 @@ void pass1()
 			char output[25];
 			bool base = false; 
 
+			//if 'START' is in opcode --> get from struct
+			//save #operand at starting address (ex: START 1000)
+			//initialize LOCCTR to starting address
+			if (strcmp(line.opcode, "START") == 0)
+			{
+				locctr = atoi(line.operand);
+			}
+
 			//checking if opcode is equal to BASE,
 			//if it is then doent print location
-			if (strcmp(line.opcode, "BASE") == 0)
+			if ((strcmp(line.opcode, "BASE") == 0) || strcmp(line.opcode, "END") == 0)
 			{
 				base = true; 
 				strcpy(output, line.opcode);
@@ -191,22 +205,28 @@ void pass1()
 				strcat(output, line.operand);
 			}
 			else
-				itoa(locctr, output, 10);
+			{
+				itoa(locctr,output,16);
+			}
 			
 			strcat(output, " ");
-			if (strlen(line.label) > 0)
+			if ((strlen(line.label) > 0) && !base)
 			{
 				strcat(output, line.label);
 				strcat(output, " ");
 			}
-			if (strlen(line.metaChar) > 0)
+			if ((strlen(line.metaChar) > 0) && !base)
 			{
 				strcat(output, line.metaChar);
 			}
 			
-			strcat(output, line.opcode);
-			strcat(output, " ");
-			if (strlen(line.operand) > 0) 
+			if (!base)
+			{
+				strcat(output, line.opcode);
+				strcat(output, " ");
+			}
+			
+			if ((strlen(line.operand) > 0) && !base) 
 			{
 				strcat(output, line.operand);
 				
@@ -223,14 +243,6 @@ void pass1()
 		if (length == 0) 
 		{
 			////////////////////////////////////////////////////////////////////////////////
-
-			//if 'START' is in opcode --> get from struct
-			//save #operand at starting address (ex: START 1000)
-			//initialize LOCCTR to starting address
-			if (strcmp(line.opcode, "START") == 0)
-			{
-				locctr = atoi(line.operand);
-			}
 
 			if (strcmp(line.opcode, "RESW") == 0)
 			{
@@ -265,7 +277,9 @@ void pass1()
 	}
 
 	//after writing the last line to the intermediate file 
-	//save (LOCCTR - starting address) as program length	 
+	//save (LOCCTR - starting address) as program length	
+
+	fputs("TABLEFIN", symFile);
 
 	//close files we opened
 	fclose(interFile);
