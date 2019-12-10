@@ -15,9 +15,9 @@
 //forward declarations
 struct opcode;
 struct symbol;
-struct opcode* readTableData();
-struct symbol* readSymTab();
-void generateObjectCode(struct opcode *table, struct symbol *syms);
+struct opcode* readTableData(char *fileName);
+struct symbol* readSymTab(char *fileName);
+void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileName);
 void format1(int opcode, char *write);
 void format2(int opcode, int reg1, int reg2, char *write);
 void format3(int opcode, int flags[6], int dest, char *write);
@@ -46,13 +46,18 @@ struct symbol
 int main()
 {
     //pointer to opcodes
-    struct opcode *cptr = readTableData();
-    struct symbol *sptr = readSymTab();
-    generateObjectCode(cptr,sptr);
+    //char file1[20];
+    //strncpy("opcode.txt",file1,10);
+    char *file1 = "opcode.txt";
+    char *file2 = "testsymtab.txt";
+    char *file3 = "testpass1.txt";
+    struct opcode *cptr = readTableData(file1);
+    struct symbol *sptr = readSymTab(file2);
+    generateObjectCode(cptr,sptr,file3);
 }
 
 //read table data method, used to read opcode.txt and make an array of opcodes
-struct opcode* readTableData()
+struct opcode* readTableData(char *fileName)
 {
 
     static struct opcode codes[59];
@@ -67,7 +72,7 @@ struct opcode* readTableData()
     //open the file
     int fptr;
    
-    if((fptr = open("opcode.txt",O_RDONLY))<0){
+    if((fptr = open(fileName,O_RDONLY))<0){
         perror("FILE NOT FOUND");
         exit(1);
     }
@@ -118,7 +123,7 @@ struct opcode* readTableData()
 }
 
 //this function reads in the symbol table and returns a point to it
-struct symbol* readSymTab()
+struct symbol* readSymTab(char *fileName)
 {
     //open the file
     static struct symbol syms[20];
@@ -128,7 +133,7 @@ struct symbol* readSymTab()
     bool fin = false;
     
     //open symtab here
-    if((fptr = open("testsymtab.txt",O_RDONLY))<0){
+    if((fptr = open(fileName,O_RDONLY))<0){
         perror("FILE NOT FOUND");
         exit(1);
     }
@@ -176,11 +181,11 @@ struct symbol* readSymTab()
 }
 
 //generates the object code from pass 1 file, saves it into objectcode.txt
-void generateObjectCode(struct opcode *table, struct symbol *syms)
+void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileName)
 {
     //open pass 1
     int fptr;
-    if((fptr = open("testpass1.txt",O_RDONLY))<0){
+    if((fptr = open(fileName,O_RDONLY))<0){
         perror("FILE NOT FOUND");
         exit(1);
     }
