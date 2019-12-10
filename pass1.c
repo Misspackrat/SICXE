@@ -13,6 +13,7 @@ struct Line
 	char opcode[MAX];
 	char operand[MAX];
 	char metaChar[MAX];
+	int format = 0; 
 };
 
 void pass1()
@@ -38,34 +39,61 @@ void pass1()
 	while (length != -1)
 	{
 		length = parse(buffer);
-		printf("%s is length %d\n", buffer, length);
+		//printf("%s is length %d\n", buffer, length);
 		
 		//////////////create struct to hold label, opcode, and operand//////////////////
 		//search through opcode.txt to see if string matches any opcodes or if it is a label
-		char str[10];
+		char str[20];
 		bool op = false; 
-		FILE* optxtFile = fopen("opcodeTEXT.txt", "r");
+		bool meta = false; 
+		bool format4 = false;
+
+		FILE* optxtFile = fopen("opcode.txt", "r");
 		if (optxtFile == NULL)
 		{
-			printf("Could not open opcodeTEXT.txt");
+			printf("Could not open opcode.txt");
 			exit(1);
 		}
 
-		while (fgets(str, 10, optxtFile) != NULL) 
+		while ((fgets(str, 20, optxtFile) != NULL) && (!op)) 
 		{
 			//get rid of newline character at end of str
 			int len = strlen(str);
 			str[len - 1] = 0; 
 
-			int val = strcmp(buffer, str);
-			//printf("buffer: %s, str: %s, val = %d\n", buffer, str,val);
-			if (val == 0)
+			//tokenize to get format
+			int i = 0;
+			char* token = strtok(str," ");
+			while (token != NULL)
 			{
-				op = true;
-				//printf("THEY ARE THE SAME\n");
+				//printf("token %s \n", token);
+
+				//only looking for opcodes
+				if (i == 0)
+				{
+					int val = strcmp(buffer, str);
+					//printf("buffer: %s, str: %s, val = %d\n", buffer, str,val);
+					if (val == 0)
+					{
+						op = true;
+						//printf("THEY ARE THE SAME\n");
+					}
+				}
+
+				//only looking for format
+				if (i == 2)
+				{
+					if (op)
+					{
+						line.format = atoi(token); 
+						
+					}
+				}
+				
+				i++;
+				token = strtok(NULL," ");
 			}
-				 
-		
+			//printf("buffer: %s, str: %s\n", buffer, str);
 		}
 		fclose(optxtFile);
 		
@@ -79,7 +107,6 @@ void pass1()
 		else
 		{
 			//check if buffer is a meta character
-			bool meta = false; 
 			if (strcmp(buffer, "#") == 0)
 			{
 				meta = true;
@@ -89,6 +116,8 @@ void pass1()
 				if (strcmp(buffer, "+") == 0)
 				{
 					meta = true;
+					format4 = true;
+					printf("made it to meta +\n");
 					strcpy(line.metaChar, buffer);
 				}
 				else
@@ -100,14 +129,20 @@ void pass1()
 
 			//check if buffer is an operand
 			bool operand = false; 
-			printf("%s line.opcode\n\n", line.opcode);
+			//printf("%s line.opcode\n\n", line.opcode);
 			if (!meta && ((line.opcode)[0] != '\0'))
 			{
+				//if buffer is an operand, save buffer into operand 
 				operand = true; 
-
+				strcpy(line.operand, buffer);
 			}
 
 			//save buffer into label if it is neither meta character or operand
+				/////////////////////SYMTAB///////////////////////////
+				//if label is not equal to null --> get label from struct
+				  //if the label is not already in the symtab
+					  //write label with address into symtab file
+				 //////////////////////////////////////////////////////////
 			if (!meta && !operand) 
 			{
 				strcpy(line.label, buffer);
@@ -116,24 +151,32 @@ void pass1()
 			}
 		}
 			 
-		//set operand
 		////////////////////////////////////////////////////////////////////////////////
 
 		//if 'START' is in opcode --> get from struct
 			  //save #operand at starting address (ex: START 1000)
 			  //initialize LOCCTR to starting address
-		  //else
-			  //initialize LOCCTR to 0
+		if (strcmp(line.opcode, "START") == 0)
+		{
+			locctr = atoi(line.operand);
+		}
 
-		  /////////////////////SYMTAB///////////////////////////
-		  //if label is not equal to null --> get label from struct
-			  //if the label is not already in the symtab
-				  //write label with address into symtab file
-		  //////////////////////////////////////////////////////////
+		//forces locctr to update only once per opcode
+		if (op)
+		{
+			//write line to intermediate file = LOCCTR + (optional)LABEL + OPCODE + OPERAND --> get data from struct
+			printf("buffer %s, opcode %s, format %d, ", buffer, line.opcode, line.format);
+			printf("locctr: %d\n", locctr);
 
-		  //update LOCCTR
-
-		  //write line to intermediate file = LOCCTR + (optional)LABEL + OPCODE + OPERAND --> get data from struct 
+			if (format4)
+			{
+				locctr++;
+				printf("format4 %d", locctr);
+			}
+	
+			//update LOCCTR
+			locctr += line.format; 
+		}
 
 		//reset line struct to empty all current data
 		if (length == 0)
@@ -142,6 +185,7 @@ void pass1()
 			(line.opcode)[0] = '\0';
 			(line.operand)[0] = '\0';
 			(line.metaChar)[0] = '\0';
+			line.format = 0;
 		}
 		
 
