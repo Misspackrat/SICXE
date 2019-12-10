@@ -45,6 +45,9 @@ struct symbol
 //my main code for testing purposes
 int main()
 {
+    /*READ ME
+        In order to go line by line
+    */
     //pointer to opcodes
     //char file1[20];
     //strncpy("opcode.txt",file1,10);
@@ -198,67 +201,33 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
     char buffer[4096];
     char line[4096];
     int length = 0;
+
     bool n = false;
     bool i = false;
     bool x = false;
     bool b = false;
     bool p = false;
     bool e = false;
+
     bool lastWasI = false;
     bool destSet = false;
     bool first = false;
     bool codeNotSet = true;
-    bool setA = false;
     bool watchForB = false;
     bool setB = false;
     bool onLDB = false;
-    bool setL = false;
-    bool setX = false;
-    bool setS = false;
-    bool setT = false;
     bool setF = false;
     bool reg2Set = false;
     bool reg1Set = false;
-
-    //format 2 commands
-    bool ADDR = false;
-    bool CLEAR = false;
-    bool COMPR = false;
-    bool DIVR = false;
-    bool MULR = false;
-    bool RMO = false;
-    bool SHIFTL = false;
-    bool SHIFTR = false;
-    bool TIXR = false;
-
-    int regA = 0;//0
-    int regX = 0;//1
-    int regL = 0;//2
-    int regB = 0;//3
-    int regS = 0;//4
-    int regT = 0;//5
+    int regB = 0;
     int reg1 = 0;
     int reg2 = 0;
-    int regF = 0;//6
     int PC = 0;//8
-    int lastPC = 0;
     int SW = 0;//9
     int format = 0;
     int op = 0;
     int ta = 0;
-    int dest;
-    
-    //setting registers to pointeres
-    int *registers[10];
-    registers[0] = &regA;
-    registers[1] = &regX;
-    registers[2] = &regL;
-    registers[3] = &regB;
-    registers[4] = &regS;
-    registers[5] = &regT;
-    registers[6] = &regF;
-    registers[8] = &PC;
-    registers[9] = &SW;
+    int dest = 0;
     
     //reads until end of file is found
     while(length != -1)
@@ -354,52 +323,12 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
                     codeNotSet = false;
 
                     //case specific things for each mnuemonic
-
-                    //format 2
-                    if(strcmp(temp.mnuemonic, "ADDR") == 0)
-                    {
-                        ADDR = true;
-                    }
-                    if(strcmp(temp.mnuemonic, "CLEAR") == 0)
-                    {
-                        CLEAR = true;
-                    }
-                    if(strcmp(temp.mnuemonic, "COMPR") == 0)
-                    {
-                        COMPR = true;
-                    }
-                    if(strcmp(temp.mnuemonic, "DIVR") == 0)
-                    {
-                        DIVR = true;
-                    }
-                    if(strcmp(temp.mnuemonic, "MULR") == 0)
-                    {
-                        MULR = true;
-                    }
-                    if(strcmp(temp.mnuemonic, "RMO") == 0)
-                    {
-                        RMO = true;
-                    }
-                    if(strcmp(temp.mnuemonic, "SHIFTL") == 0)
-                    {
-                        SHIFTL = true;
-                        reg2Set = true;
-                    }
-                    if(strcmp(temp.mnuemonic, "SHIFTR") == 0)
-                    {
-                        SHIFTR = true;
-                        reg2Set = true;
-                    }
                     if(strcmp(temp.mnuemonic, "TIXR") == 0)
                     {
-                        TIXR = true;
                         reg2 = 0;
                         reg2Set = true;
                     }
-                    if(strcmp(temp.mnuemonic, "LDA") == 0)
-                    {
-                       setA = true; 
-                    } 
+
                     if(strcmp(temp.mnuemonic, "LDB") == 0)
                     {
                         watchForB = true;    
@@ -493,71 +422,7 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
                         
                         reg1Set = true;
                     }
-                   
-                    int n;
-                    if(reg1Set && (SHIFTL || SHIFTR))
-                    {
-                        int val = atoi(buffer);
-                        n = val;
-                    }
-                    /*                     
-                    bool ADDR = false;
-                    bool CLEAR = false;
-                    bool COMPR = false;
-                    bool DIVR = false;
-                    bool MULR = false;
-                    bool RMO = false;
-                    bool SHIFTL = false;
-                    bool SHIFTR = false;
-                    bool TIXR = false;*/
-                    if(ADDR)
-                    {
-                        *registers[reg2] = reg2 + reg1;
-                        ADDR = false;
-                    }
-                    if(CLEAR)
-                    {
-                        *registers[reg1] = 0;
-                        CLEAR = false;
-                    }
-                    if(COMPR)
-                    {
-                        *registers[9] = *registers[reg2] - *registers[reg1];
-                        COMPR = false;
-                    }
-                    if(DIVR)
-                    {
-                        *registers[reg2] = *registers[reg2] / *registers[reg1];
-                        DIVR = false;
-                    }
-                    if(MULR)
-                    {
-                        *registers[reg2] = *registers[reg2] * *registers[reg1];
-                        MULR = false;
-                    }
-                    if(RMO)
-                    {
-                        *registers[reg2] = *registers[reg1];
-                        RMO = false;
-                    }
-                    if(SHIFTL)
-                    {
-                        *registers[reg1] = *registers[reg1] << n-1;
-                        SHIFTL = false;
-                    }   
-                    if(SHIFTR)
-                    {
-                        *registers[reg1] = *registers[reg1] >> n-1;
-                        SHIFTR = false;
-                    }
-                    if(TIXR)
-                    {
-                        *registers[9] = *registers[reg2] - *registers[reg1];
-                        *registers[reg2] = *registers[reg1] + 1;
-                        TIXR = false;
-                    }
                 }
-
             }
 
             //setting flags along the way
@@ -771,4 +636,3 @@ int toDecimal(char* binary)
 
     return decimal;
 }
-
