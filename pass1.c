@@ -195,9 +195,10 @@ void pass1()
 			if (strlen(line.operand) > 0) 
 			{
 				strcat(output, line.operand);
-				strcat(output, "\n");
-			}
 				
+			}
+			strcat(output, "\n");
+
 			fputs(output, interFile);
 			//printf("buffer %s\nlabel %s, opcode %s, format %d, meta %s, operand %s, ", buffer, line.label, line.opcode, line.format, line.metaChar, line.operand);
 			//printf("locctr: %d\n", locctr);
