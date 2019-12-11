@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <string.h>
+#define MAXED 1048576
 
 //written parse function
 //#include "parse.h"
@@ -27,8 +28,9 @@ struct symbol findSymbol(struct symbol *table, char *name);
 struct opcode findOpcode(struct opcode *table, char *mnuemonic);
 void toBinary(int decimal, char *buffer);
 int toDecimal(char* binary);
-char obCodeArray[4096];
+char obCodeArray[MAXED];
 int locationInArrayOb = 0; 
+int counterLocOb = 0;
 
 //opcode.txt is formatted as mnuemonic, opcode, format
 struct opcode
@@ -82,7 +84,7 @@ struct opcode* readTableData(char *fileName)
     
     dup2(fptr,STDIN_FILENO);//file opened
     
-    char buffer[4096];
+    char buffer[MAXED];
     int length = 0;
     
     //go through all 59 codes
@@ -129,7 +131,7 @@ struct opcode* readTableData(char *fileName)
 struct symbol* readSymTab(char *fileName)
 {
     //open the file
-    static struct symbol syms[20];
+    static struct symbol syms[1024];
     int fptr;
     int count = 0; 
     bool first = false;   
@@ -143,7 +145,7 @@ struct symbol* readSymTab(char *fileName)
     
     dup2(fptr,STDIN_FILENO);//file opened
     
-    char buffer[4096];
+    char buffer[MAXED];
     int length = 0;
 
     //loop til we reach the end
@@ -200,9 +202,9 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
     fileWrite = fopen("objectcode.txt","w");
     FILE* fileWriteObProg;
     fileWriteObProg = fopen("objectprogram.txt","w");
-    char buffer[4096];
-    char line[4096];
-    char modLoc[4096];
+    char buffer[MAXED];
+    char line[MAXED];
+    char modLoc[MAXED];
     int modLocCount = 0;
     char nameProg[6];
     int length = 0;
@@ -211,7 +213,7 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
     
     int locationInArrayPo = 0; 
     
-    char lengthOfOb[4096]; 
+    char lengthOfOb[MAXED]; 
     char printText[6];
     //set the first array to zero
     lengthOfOb[0] = 0;
@@ -277,7 +279,7 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
             if(!destSet && !e)
                 dest = ta - (PC+format);
 
-            char writeBuff[16];
+            char writeBuff[1024];
             //generate object codes based on the formats
             switch(format)
             {
@@ -312,20 +314,27 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
             //write lines to the file
             fputs(line, fileWrite);
             
-              //object program saving pointers and counters
-            if((lengthOfOb[locationInArrayPo]+(format))<30){
-                lengthOfOb[locationInArrayPo] = lengthOfOb[locationInArrayPo]+(format);
+            //object program saving pointers and counters
+            if(format != 0){
+                if((counterLocOb+(format))<30){
+                    counterLocOb = counterLocOb + format;
+                    strcpy(obCodeArray+locationInArrayOb,writeBuff);
+                    locationInArrayOb= locationInArrayOb + format*2;  
+                    //lengthOfOb[locationInArrayPo] = lengthOfOb[locationInArrayPo] + (format);
+                    printf("%d \n",counterLocOb);
+                }
+                else{
+                    lengthOfOb[locationInArrayPo] = counterLocOb;  
+                    counterLocOb = format;
+                    locationInArrayPo=locationInArrayPo+1;
+                    lineCount++; 
+                    obCodeArray[locationInArrayOb]='\0';
+                    locationInArrayOb++;
+                    strcpy(obCodeArray+locationInArrayOb,writeBuff);
+                    locationInArrayOb= locationInArrayOb + format*2;  
+                }
             }
-            else{
-                locationInArrayPo++;
-                lengthOfOb[locationInArrayPo] = (format);  
-                lineCount++;  
-            }
-            
-            obCodeArray[locationInArrayOb]=PC;    //*********************************************This needs to be writeBuff, not PC!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-            locationInArrayOb++;   
-            
-                
+              
             
             //object code was generated
             if(format != 0)
@@ -348,7 +357,7 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
             first = false;
             codeNotSet = true;
             onLDB = false;
-            memset(line, 0, 4096);
+            memset(line, 0, MAXED);
             
 
 
@@ -528,20 +537,19 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
     int y;
     int t;
     int z = syms[0].loc;
+    int c = 0;
     locationInArrayOb = 0; //reset to zero
     for(y = 0; y < lineCount; y++){
         fputs("T", fileWriteObProg);
-        sprintf(printText, "%06x", z);
+        sprintf(printText, "%06x", z); //location starting on this line in the text record.
         fputs(printText, fileWriteObProg);
-        sprintf(printText, "%02x", lengthOfOb[y]);
+        sprintf(printText, "%02x", lengthOfOb[y]);  //length of this text record line.
         fputs(printText, fileWriteObProg);
-        for(t = 0; t < lengthOfOb[y]; t++){
-           sprintf(printText, "%x", obCodeArray[locationInArrayOb]);
-           fputs(printText, fileWriteObProg);
-           locationInArrayOb++;
-        }
+        fputs(obCodeArray+c, fileWriteObProg);
+        //locationInArrayOb=locationInArrayOb+lengthOfOb[y*2]+1;
         fputc('\n', fileWriteObProg);
         z = z + lengthOfOb[y];
+        c = (c + lengthOfOb[y])*2 +1;
     }
     
     
@@ -567,13 +575,13 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
 //single byte object code converter (returns into char pointer)
 void format1(int opcode, char *write)
 {
-    sprintf(write, "%04x",opcode);
+    sprintf(write, "%04x",opcode+'\0');
 }
 
 //2 byte object code converter (returns into char pointer)
 void format2(int opcode, int reg1, int reg2, char *write)
 {
-    sprintf(write, "%02x%01x%01x", opcode, reg1, reg2);
+    sprintf(write, "%02x%01x%01x", opcode, reg1, reg2+'\0');
 }
 
 //3 byte object code converter (returns into char pointer)
@@ -710,7 +718,7 @@ void toBinary(int decimal, char* buffer)
     int j;
     for(j = i -1; j >=0; j--)
     {
-        binStr[t] = binary[j] + '0';
+        binStr[t] = binary[j] + '0'; 
         t++;
     }
     
