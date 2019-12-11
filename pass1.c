@@ -13,14 +13,12 @@ struct Line
 	char opcode[MAX];
 	char operand[MAX];
 	char metaChar[MAX];
-	int format; 
+	int format;
 };
 
 void pass1()
 {
-	struct Line line; 
- char printText[64];
- line.format = 0;
+	struct Line line;
 	int length = 0; //e will be 0 if parse returns a new line, -1 when EOF is found, or the length of the string if found 
 	int locctr = 0; //location counter
 	int progLength = 0;
@@ -43,7 +41,7 @@ void pass1()
 	while (length != -1)
 	{
 		length = parse(buffer);
-		
+
 		//////////////create struct to hold label, opcode, and operand//////////////////
 		//search through opcode.txt to see if string matches any opcodes or if it is a label
 		char str[20];
@@ -71,15 +69,15 @@ void pass1()
 		}
 
 		//reads from opcode.txt line by line
-		while ((fgets(str, 20, optxtFile) != NULL) && (!op) && hasInput) 
+		while ((fgets(str, 20, optxtFile) != NULL) && (!op) && hasInput)
 		{
 			//get rid of newline character at end of str
 			int len = strlen(str);
-			str[len - 1] = 0; 
+			str[len - 1] = 0;
 
 			//tokenize to get format
 			int i = 0;
-			char* token = strtok(str," ");
+			char* token = strtok(str, " ");
 			while (token != NULL)
 			{
 				//if buffer does match an opcode, set opcode to buffer
@@ -98,11 +96,11 @@ void pass1()
 				{
 					if (op)
 					{
-						line.format = atoi(token); 
+						line.format = atoi(token);
 					}
 				}
 				i++;
-				token = strtok(NULL," ");
+				token = strtok(NULL, " ");
 			}
 
 			//looking for keywords by reading line by line from keywords.txt
@@ -116,7 +114,7 @@ void pass1()
 				char* token = strtok(str, " ");
 				while (token != NULL)
 				{
-					
+
 					//if buffer does match an opcode, set opcode to buffer
 					int val = strcmp(buffer, str);
 					if (val == 0)
@@ -124,7 +122,7 @@ void pass1()
 						op = true;
 						strcpy(line.opcode, buffer);
 					}
-					
+
 					token = strtok(NULL, " ");
 				}
 			}
@@ -133,8 +131,8 @@ void pass1()
 		//close files
 		fclose(optxtFile);
 		fclose(keywordFile);
-		
-		if(!op && hasInput)
+
+		if (!op && hasInput)
 		{
 			//check if buffer is a meta character
 			if (strcmp(buffer, "#") == 0)
@@ -160,12 +158,21 @@ void pass1()
 					}
 
 			//check if buffer is an operand
-			bool operand = false; 
+			bool operand = false;
 			if (!meta && hasInput && ((line.opcode)[0] != '\0'))
 			{
-				//if buffer is an operand, save buffer into operand 
-				operand = true; 
-				strcpy(line.operand, buffer);
+				//if buffer is an operand, save buffer into operand
+				if (strlen(line.operand) > 0)
+				{
+					operand = true;
+					strcat(line.operand, buffer);
+				}
+				else
+				{
+					operand = true;
+					strcpy(line.operand, buffer);
+				}
+				
 				//printf("%s line.operand\n\n", line.operand);
 			}
 
@@ -177,15 +184,18 @@ void pass1()
 				 //////////////////////////////////////////////////////////
 			if (!meta && !operand && hasInput && (strlen(buffer) > 0))
 			{
-				char out[MAX]; 
+				char out[MAX];
 				char temp[MAX];
 
 				strcpy(line.label, buffer);
 				strcpy(out, line.label);
 				strcat(out, " ");
-        sprintf(printText, "%06x", locctr);
-				strcat(out, printText);
+				char buff[32];
+				sprintf(buff, "%06x", locctr);
+				strcat(out, buff);
+				//strcat(out, itoa(locctr, temp, 16));
 				strcat(out, "\n");
+				//printf("%s\n",out);
 				fputs(out, symFile);
 				//int len = strlen(line.label);
 				//(line.label)[len - 1] = 0;
@@ -196,7 +206,7 @@ void pass1()
 		if (!hasInput)
 		{
 			char output[25];
-			bool base = false; 
+			bool base = false;
 			bool metaOnOp = false;
 
 			//if 'START' is in opcode --> get from struct
@@ -211,7 +221,7 @@ void pass1()
 			//if it is then don't print location
 			if ((strcmp(line.opcode, "BASE") == 0))
 			{
-				base = true; 
+				base = true;
 				strcpy(output, line.opcode);
 				strcat(output, " ");
 				strcat(output, line.operand);
@@ -219,10 +229,14 @@ void pass1()
 			else
 			{
 				//save locctr
-        sprintf(output, "%06x", locctr);
+				//char bu[32];
+				sprintf(output, "%04x", locctr);
+				//strcat(output, bu);
+
 				//itoa(locctr,output,16);
+				//printf("%s \n", output);
 			}
-			
+
 			//save label if there is one
 			strcat(output, " ");
 			if ((strlen(line.label) > 0) && !base)
@@ -239,7 +253,7 @@ void pass1()
 				{
 					strcat(output, "+");
 				}
-				
+
 				//more than 2 meta characters
 				if (metaType > 1)
 				{
@@ -253,18 +267,18 @@ void pass1()
 					metaOnOp = true;
 				}
 
-				
+
 			}
-			
+
 			//save opcode 
 			if (!base)
 			{
 				strcat(output, line.opcode);
 				strcat(output, " ");
 			}
-			
+
 			//save operand
-			if ((strlen(line.operand) > 0) && !base) 
+			if ((strlen(line.operand) > 0) && !base)
 			{
 				//attach meta character to operand
 				if (metaOnOp)
@@ -272,7 +286,7 @@ void pass1()
 					strcat(output, line.metaChar);
 				}
 				strcat(output, line.operand);
-				
+
 			}
 			strcat(output, "\n");
 
@@ -281,9 +295,9 @@ void pass1()
 			//printf("locctr: %d\n", locctr);
 			//printf("length %d\n\n", length);
 		}
-		
 
-		if (length == 0) 
+
+		if (length == 0)
 		{
 			//checking for keywords that need addresses
 
@@ -308,7 +322,7 @@ void pass1()
 			if (format4)
 			{
 				locctr++;
-				format4 = false; 
+				format4 = false;
 			}
 
 			//reset meta character count
