@@ -101,7 +101,7 @@ struct opcode* readTableData(char *fileName)
         else
         {
             //if its and opcode
-            if(first & !second)
+            if(first && !second)
             {
                 int val = (int)strtol(buffer, NULL, 16);
                 codes[count].opcode = val;
