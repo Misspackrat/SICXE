@@ -41,18 +41,18 @@ void pass1()
 	while (length != -1)
 	{
 		length = parse(buffer);
-		//printf("%s is length %d\n", buffer, length);
 		
 		//////////////create struct to hold label, opcode, and operand//////////////////
 		//search through opcode.txt to see if string matches any opcodes or if it is a label
 		char str[20];
-		bool op = false; 
-		bool meta = false; 
-		bool hasInput = true; 
+		bool op = false;		//true when there is an opcode
+		bool meta = false;		//true when line of assembley 
+		bool hasInput = true;	//true when buffer is not a newline or EOF character
 
 		if (length == 0)
 			hasInput = false;
 
+		//opens and reads from opcode.txt to see if buffer is a opcode
 		FILE* optxtFile = fopen("opcode.txt", "r");
 		if (optxtFile == NULL)
 		{
@@ -60,6 +60,7 @@ void pass1()
 			exit(1);
 		}
 
+		//opens and reads from keywords.txt to see if buffer is a keyword (i.e. not an operand but a special command)
 		FILE* keywordFile = fopen("keywords.txt", "r");
 		if (keywordFile == NULL)
 		{
@@ -67,6 +68,7 @@ void pass1()
 			exit(1);
 		}
 
+		//reads from opcode.txt line by line
 		while ((fgets(str, 20, optxtFile) != NULL) && (!op) && hasInput) 
 		{
 			//get rid of newline character at end of str
@@ -89,7 +91,7 @@ void pass1()
 					}
 				}
 
-				//only looking for format
+				//only looking for format type
 				if (i == 2)
 				{
 					if (op)
@@ -97,12 +99,11 @@ void pass1()
 						line.format = atoi(token); 
 					}
 				}
-				
 				i++;
 				token = strtok(NULL," ");
 			}
 
-			//looking for keywords
+			//looking for keywords by reading line by line from keywords.txt
 			while ((fgets(str, 20, keywordFile) != NULL) && (!op) && hasInput)
 			{
 				//get rid of newline character at end of str
@@ -126,6 +127,8 @@ void pass1()
 				}
 			}
 		}
+
+		//close files
 		fclose(optxtFile);
 		fclose(keywordFile);
 		
@@ -186,6 +189,7 @@ void pass1()
 			}
 		}
 
+		//buffer is a newline or EOF we want to update locctr and save data into intermediate file
 		if (!hasInput)
 		{
 			char output[25];
@@ -201,7 +205,7 @@ void pass1()
 			}
 
 			//checking if opcode is equal to BASE,
-			//if it is then doent print location
+			//if it is then don't print location
 			if ((strcmp(line.opcode, "BASE") == 0) || strcmp(line.opcode, "END") == 0)
 			{
 				base = true; 
@@ -211,15 +215,19 @@ void pass1()
 			}
 			else
 			{
+				//save locctr
 				itoa(locctr,output,16);
 			}
 			
+			//save label if there is one
 			strcat(output, " ");
 			if ((strlen(line.label) > 0) && !base)
 			{
 				strcat(output, line.label);
 				strcat(output, " ");
 			}
+
+			//save meta char is there are any
 			if ((strlen(line.metaChar) > 0) && !base)
 			{
 				//just a +
@@ -235,6 +243,7 @@ void pass1()
 					metaOnOp = true;
 				}
 
+				//just one meta char but it attaches to the operand
 				if (!format4 && (metaType == 1))
 				{
 					metaOnOp = true;
@@ -243,14 +252,17 @@ void pass1()
 				
 			}
 			
+			//save opcode 
 			if (!base)
 			{
 				strcat(output, line.opcode);
 				strcat(output, " ");
 			}
 			
+			//save operand
 			if ((strlen(line.operand) > 0) && !base) 
 			{
+				//attach meta character to operand
 				if (metaOnOp)
 				{
 					strcat(output, line.metaChar);
@@ -269,7 +281,7 @@ void pass1()
 
 		if (length == 0) 
 		{
-			////////////////////////////////////////////////////////////////////////////////
+			//checking for keywords that need addresses
 
 			if (strcmp(line.opcode, "RESW") == 0)
 			{
@@ -288,12 +300,14 @@ void pass1()
 			//update LOCCTR
 			locctr += line.format;
 
+			//increase locctr to accomidate format4
 			if (format4)
 			{
 				locctr++;
 				format4 = false; 
 			}
 
+			//reset meta character count
 			metaType = 0;
 
 			//reset line struct to empty all current data
