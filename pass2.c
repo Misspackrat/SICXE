@@ -483,8 +483,9 @@ void format3(int opcode, int flags[6], int dest, char *write)
     char opStr[32];
     toBinary(opcode, opStr);
     opStr[6] = '\0';
+    int i;
 
-    for(int i = 0; i < 6; i ++)
+    for(i = 0; i < 6; i ++)
     {
         opStr[6+i] = flags[i]+'0';
     }
@@ -509,8 +510,9 @@ void format4(int opcode, int flags[6], int dest, char *write)
     char opStr[32];
     toBinary(opcode, opStr);
     opStr[6] = '\0';
+    int i;
 
-    for(int i = 0; i < 6; i ++)
+    for(i = 0; i < 6; i ++)
     {
         opStr[6+i] = flags[i]+'0';
     }
@@ -552,7 +554,8 @@ void getFlagNum(bool n, bool i, bool x, bool b, bool p, bool e, int *nums)
 //searches through the opcodes to get information about the mneumonic
 struct opcode findOpcode(struct opcode *table, char *mnuemonic)
 {
-    for(int i = 0; i < 59; i++)
+    int i;
+    for(i = 0; i < 59; i++)
     {
         if(strcmp(mnuemonic, table[i].mnuemonic) == 0)
         {
@@ -605,7 +608,8 @@ void toBinary(int decimal, char* buffer)
     
     //reverse the numbers
     char binStr [i];
-    for(int j = i -1; j >=0; j--)
+    int j;
+    for(j = i -1; j >=0; j--)
     {
         binStr[t] = binary[j] + '0';
         t++;
