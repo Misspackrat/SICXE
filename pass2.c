@@ -27,6 +27,8 @@ struct symbol findSymbol(struct symbol *table, char *name);
 struct opcode findOpcode(struct opcode *table, char *mnuemonic);
 void toBinary(int decimal, char *buffer);
 int toDecimal(char* binary);
+char obCodeArray[4096];
+int locationInArrayOb = 0; 
 
 //opcode.txt is formatted as mnuemonic, opcode, format
 struct opcode
@@ -196,9 +198,23 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
     //create and open file to write to    
     FILE* fileWrite;
     fileWrite = fopen("objectcode.txt","w");
+    FILE* fileWriteObProg;
+    fileWriteObProg = fopen("objectprogram.txt","w");
     char buffer[4096];
     char line[4096];
+    char modLoc[4096];
+    int modLocCount = 0;
+    char nameProg[6];
     int length = 0;
+
+    //pointers and counters for creating the object program.
+    
+    int locationInArrayPo = 0; 
+    
+    char lengthOfOb[4096]; 
+    char printText[6];
+    //set the first array to zero
+    lengthOfOb[0] = 0;
 
     bool n = false;
     bool i = false;
@@ -226,6 +242,17 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
     int op = 0;
     int ta = 0;
     int dest = 0;
+    int a;
+    int lineCount = 1;
+    
+    //start the beginning of the object program with header line:
+    fputs("H", fileWriteObProg);
+    
+    strcpy(nameProg,syms[0].name+'\0');
+    sprintf(printText, "%-6s", nameProg);
+    fputs(printText, fileWriteObProg);
+    sprintf(printText, "%06x", syms[0].loc);
+    fputs(printText, fileWriteObProg);    
     
     //reads until end of file is found
     while(length != -1)
@@ -256,21 +283,50 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
             {
                     case 1:
                         format1(op, writeBuff);
+                        //for(i = 0 ; i<2;i++)
+                        //    obCodeArray[i+locationInArrayOb]=writeBuff[i];     
+                        //locationInArrayOb=locationInArrayOb+2; 
                         break;
                     case 2:
                         format2(op,reg1,reg2, writeBuff);
+                        //for(i = 0 ; i<4;i++)
+                        //    obCodeArray[i+locationInArrayOb]=writeBuff[i];     
+                        //locationInArrayOb=locationInArrayOb+4; 
                         break;
                     case 3:
                         format3(op, flags , dest, writeBuff);
+                        //for(i = 0 ; i<6;i++)
+                        //    obCodeArray[i+locationInArrayOb]=writeBuff[i];     
+                        //locationInArrayOb=locationInArrayOb+6; 
                         break;
                     case 4:
                         format4(op, flags, dest, writeBuff);
+                        //for(i = 0 ; i<8;i++)
+                        //    obCodeArray[i+locationInArrayOb]=writeBuff[i];     
+                        //locationInArrayOb=locationInArrayOb+8; 
+                        modLoc[modLocCount] = (PC)+1; //for record printing
+                        modLocCount++;
                         break;
             }
             
-            
             //write lines to the file
             fputs(line, fileWrite);
+            
+              //object program saving pointers and counters
+            if((lengthOfOb[locationInArrayPo]+(format))<30){
+                lengthOfOb[locationInArrayPo] = lengthOfOb[locationInArrayPo]+(format);
+            }
+            else{
+                locationInArrayPo++;
+                lengthOfOb[locationInArrayPo] = (format);  
+                lineCount++;  
+            }
+            
+            obCodeArray[locationInArrayOb]=PC;    //*********************************************This needs to be writeBuff, not PC!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+            locationInArrayOb++;   
+            
+                
+            
             //object code was generated
             if(format != 0)
             {
@@ -293,6 +349,8 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
             codeNotSet = true;
             onLDB = false;
             memset(line, 0, 4096);
+            
+
 
         }
         else
@@ -462,6 +520,47 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
         }
     }    
     
+    //finish the first line in the object program aka the header line
+    sprintf(printText, "%06x", PC);
+    fputs(printText, fileWriteObProg);
+    fputc('\n', fileWriteObProg);
+    //place the text part into the object program, each line only reaching 30 or less
+    int y;
+    int t;
+    int z = syms[0].loc;
+    locationInArrayOb = 0; //reset to zero
+    for(y = 0; y < lineCount; y++){
+        fputs("T", fileWriteObProg);
+        sprintf(printText, "%06x", z);
+        fputs(printText, fileWriteObProg);
+        sprintf(printText, "%02x", lengthOfOb[y]);
+        fputs(printText, fileWriteObProg);
+        for(t = 0; t < lengthOfOb[y]; t++){
+           sprintf(printText, "%x", obCodeArray[locationInArrayOb]);
+           fputs(printText, fileWriteObProg);
+           locationInArrayOb++;
+        }
+        fputc('\n', fileWriteObProg);
+        z = z + lengthOfOb[y];
+    }
+    
+    
+    for(y = 0; y < modLocCount; y++){
+        fputs("M", fileWriteObProg);
+        sprintf(printText, "%06x", modLoc[y]);
+        fputs(printText, fileWriteObProg);
+        sprintf(printText, "%02x", 05);
+        fputs(printText, fileWriteObProg);
+        fputc('\n', fileWriteObProg);
+    }
+
+
+    //place the end of record in the object program
+    fputs("E", fileWriteObProg);
+    sprintf(printText, "%06x", syms[0].loc);
+    fputs(printText, fileWriteObProg);
+    
+    fclose(fileWriteObProg);//close file for object program
     fclose(fileWrite);//close file for objectcode
 }
 
@@ -501,7 +600,7 @@ void format3(int opcode, int flags[6], int dest, char *write)
         sprintf(write, "%03x%s", code, truncate);
     }
     else
-        sprintf(write, "%03x%03x", code, dest);
+        sprintf(write, "%03x%03x", code, dest+'\0');
 }
 
 //extended format object code converter (returns into char pointer)
@@ -519,7 +618,7 @@ void format4(int opcode, int flags[6], int dest, char *write)
 
     opStr[12] = '\0';
     int code = toDecimal(opStr);
-    sprintf(write, "%03x%05x", code,dest);
+    sprintf(write, "%03x%05x", code,dest+'\0');
 }
 
 //sets an array of ones and zeros representing the flags
