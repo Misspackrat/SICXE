@@ -341,9 +341,9 @@ void pass1()
 
 	//after writing the last line to the intermediate file 
 	//save (LOCCTR - starting address) as program length	
-  char output[25];
-  sprintf(output, "%04x", locctr);
-  fputs(output, interFile);
+	char output[25];
+	sprintf(output, "%04x", locctr);
+	fputs(output, interFile);
 	fputs("TABLEFIN", symFile);
 
 	//close files we opened
