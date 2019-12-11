@@ -312,6 +312,13 @@ void pass1()
 				locctr += atoi(line.operand);
 			}
 
+			if (strcmp(line.opcode, "BYTE") == 0)
+			{
+				int val = strlen(line.operand);
+				val -= 2;
+				locctr += val;
+			}
+
 			//write line to intermediate file = LOCCTR + (optional)LABEL + OPCODE + OPERAND --> get data from struct
 			//printf("buffer %s, opcode %s, format %d, meta %s, operand %s, ", buffer, line.opcode, line.format, line.metaChar, line.operand);
 			//printf("locctr: %d\n", locctr);
