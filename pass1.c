@@ -315,7 +315,7 @@ void pass1()
 			if (strcmp(line.opcode, "BYTE") == 0)
 			{
 				int val = strlen(line.operand);
-				val -= 2;
+				val -= 3;
 				locctr += val;
 			}
 
