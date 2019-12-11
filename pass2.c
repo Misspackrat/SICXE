@@ -43,11 +43,9 @@ struct symbol
 };
 
 //my main code for testing purposes
-int main()
+/*int main()
 {
-    /*READ ME
-        In order to go line by line
-    */
+
     //pointer to opcodes
     //char file1[20];
     //strncpy("opcode.txt",file1,10);
@@ -57,7 +55,7 @@ int main()
     struct opcode *cptr = readTableData(file1);
     struct symbol *sptr = readSymTab(file2);
     generateObjectCode(cptr,sptr,file3);
-}
+}*/
 
 //read table data method, used to read opcode.txt and make an array of opcodes
 struct opcode* readTableData(char *fileName)
