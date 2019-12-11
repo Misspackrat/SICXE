@@ -33,7 +33,18 @@ int parse(char *w){
                 w++;
                 *w=0;
                 return count;}}
-         if(iochar == 35){     //35 = # in ascii      
+         if(iochar == 44){     //35 = # in ascii      
+            if(count > 0){      //# found: characters in the array, unget # to process next call 
+                *w=0;           //set a null character at the end of array, and return count.
+                ungetc(iochar,stdin);  
+                return count; }
+            else{               // nothing in the character array, then return meta character in the array and return count 1.
+                count++;
+                *w=iochar;
+                w++;
+                *w=0;
+                return count;}}
+        if(iochar == 35){     //35 = # in ascii      
             if(count > 0){      //# found: characters in the array, unget # to process next call 
                 *w=0;           //set a null character at the end of array, and return count.
                 ungetc(iochar,stdin);  
