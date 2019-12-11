@@ -1,3 +1,5 @@
+//Wrote mainly by Lauryn Jefferson
+
 #include <stdio.h>
 #include <stdlib.h> //for atoi()
 #include <stdbool.h> //for booleans
