@@ -24,6 +24,7 @@ void pass1()
 	int progLength = 0;
 	char buffer[MAX];  //update this length to something appropriate
 	bool format4 = false;
+	int metaType = 0;
 
 	//open both files for writing in
 	//create new intermediate file
@@ -134,6 +135,7 @@ void pass1()
 			if (strcmp(buffer, "#") == 0)
 			{
 				meta = true;
+				metaType++;
 				strcpy(line.metaChar, buffer);
 			}
 			else
@@ -141,12 +143,14 @@ void pass1()
 				{
 					meta = true;
 					format4 = true;
+					metaType++;
 					strcpy(line.metaChar, buffer);
 				}
 				else
 					if (strcmp(buffer, "@") == 0)
 					{
 						meta = true;
+						metaType++;
 						strcpy(line.metaChar, buffer);
 					}
 
@@ -186,6 +190,7 @@ void pass1()
 		{
 			char output[25];
 			bool base = false; 
+			bool metaOnOp = false;
 
 			//if 'START' is in opcode --> get from struct
 			//save #operand at starting address (ex: START 1000)
@@ -217,7 +222,25 @@ void pass1()
 			}
 			if ((strlen(line.metaChar) > 0) && !base)
 			{
-				strcat(output, line.metaChar);
+				//just a +
+				if (format4 && (metaType == 1))
+				{
+					strcat(output, "+");
+				}
+				
+				//more than 2 meta characters
+				if (metaType > 1)
+				{
+					strcat(output, "+");
+					metaOnOp = true;
+				}
+
+				if (!format4 && (metaType == 1))
+				{
+					metaOnOp = true;
+				}
+
+				
 			}
 			
 			if (!base)
@@ -228,6 +251,10 @@ void pass1()
 			
 			if ((strlen(line.operand) > 0) && !base) 
 			{
+				if (metaOnOp)
+				{
+					strcat(output, line.metaChar);
+				}
 				strcat(output, line.operand);
 				
 			}
@@ -266,6 +293,8 @@ void pass1()
 				locctr++;
 				format4 = false; 
 			}
+
+			metaType = 0;
 
 			//reset line struct to empty all current data
 			(line.label)[0] = '\0';
