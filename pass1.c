@@ -13,12 +13,14 @@ struct Line
 	char opcode[MAX];
 	char operand[MAX];
 	char metaChar[MAX];
-	int format = 0; 
+	int format; 
 };
 
 void pass1()
 {
 	struct Line line; 
+ char printText[64];
+ line.format = 0;
 	int length = 0; //e will be 0 if parse returns a new line, -1 when EOF is found, or the length of the string if found 
 	int locctr = 0; //location counter
 	int progLength = 0;
@@ -181,7 +183,8 @@ void pass1()
 				strcpy(line.label, buffer);
 				strcpy(out, line.label);
 				strcat(out, " ");
-				strcat(out, itoa(locctr, temp, 16));
+        sprintf(printText, "%06x", locctr);
+				strcat(out, printText);
 				strcat(out, "\n");
 				fputs(out, symFile);
 				//int len = strlen(line.label);
@@ -216,7 +219,8 @@ void pass1()
 			else
 			{
 				//save locctr
-				itoa(locctr,output,16);
+        sprintf(output, "%06x", locctr);
+				//itoa(locctr,output,16);
 			}
 			
 			//save label if there is one
