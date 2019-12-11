@@ -1,0 +1,19 @@
+QUIZ    START   0
+
+FIRST    LDA     #3
+
+         STX     THREE
+
+         LDX     #0
+
+        +LDS     THREE
+
+         ADDR    A,X
+
+        +STA     RESULT,X
+
+RESULT   RESW    1
+
+THREE    RESW    1
+
+         END     FIRST

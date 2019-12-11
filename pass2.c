@@ -216,7 +216,7 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
     int locationInArrayPo = 0; 
     
     char lengthOfOb[MAXED]; 
-    char printText[6];
+    char printText[12];
     //set the first array to zero
     lengthOfOb[0] = 0;
 
@@ -324,6 +324,7 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
                     locationInArrayOb= locationInArrayOb + format*2;                      
                 }
                 else{
+                    //printf("inside else %d\n",counterLocOb);
                     lengthOfOb[locationInArrayPo] = counterLocOb;  
                     counterLocOb = format;
                     locationInArrayPo=locationInArrayPo+1;
@@ -332,6 +333,7 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
                     locationInArrayOb++;
                     strcpy(obCodeArray+locationInArrayOb,writeBuff);
                     locationInArrayOb= locationInArrayOb + format*2; 
+                    //printf("exit else %d\n",counterLocOb);
                 }
             }
               
@@ -379,6 +381,8 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
             if(codeNotSet)
             {
                 struct opcode temp = findOpcode(table, buffer);
+                /*if(strcmp("JLT", buffer) == 0)
+                    printf("jlt was found");*/
                 if(strcmp(temp.mnuemonic, "NO") != 0)
                 {
                     //found a mnuemonic
