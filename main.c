@@ -31,6 +31,6 @@ int main(int argc, char *argv[])
   struct opcode *cptr = readTableData(file1);
   struct symbol *sptr = readSymTab(file2);
   generateObjectCode(cptr,sptr,file3); 
-  pass2();
+  //pass2();
   exit(0); 
 }
