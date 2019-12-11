@@ -13,7 +13,7 @@ struct Line
 	char opcode[MAX];
 	char operand[MAX];
 	char metaChar[MAX];
-	int format = 0; 
+	int format; 
 };
 
 void pass1()
@@ -181,8 +181,12 @@ void pass1()
 				strcpy(line.label, buffer);
 				strcpy(out, line.label);
 				strcat(out, " ");
-				strcat(out, itoa(locctr, temp, 16));
+                char buff[32];
+                sprintf(buff, "%06x", locctr);
+                strcat(out, buff);
+				//strcat(out, itoa(locctr, temp, 16));
 				strcat(out, "\n");
+                //printf("%s\n",out);
 				fputs(out, symFile);
 				//int len = strlen(line.label);
 				//(line.label)[len - 1] = 0;
@@ -216,7 +220,12 @@ void pass1()
 			else
 			{
 				//save locctr
-				itoa(locctr,output,16);
+                //char bu[32];
+                sprintf(output, "%04x", locctr);
+                //strcat(output, bu);
+                
+				//itoa(locctr,output,16);
+                //printf("%s \n", output);
 			}
 			
 			//save label if there is one
