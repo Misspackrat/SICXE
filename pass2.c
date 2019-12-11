@@ -10,7 +10,7 @@
 #include <string.h>
 
 //written parse function
-#include "parse.h"
+//#include "parse.h"
 
 //forward declarations
 struct opcode;
