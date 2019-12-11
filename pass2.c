@@ -319,9 +319,7 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
                 if((counterLocOb+(format))<30){
                     counterLocOb = counterLocOb + format;
                     strcpy(obCodeArray+locationInArrayOb,writeBuff);
-                    locationInArrayOb= locationInArrayOb + format*2;  
-                    //lengthOfOb[locationInArrayPo] = lengthOfOb[locationInArrayPo] + (format);
-                    printf("%d \n",counterLocOb);
+                    locationInArrayOb= locationInArrayOb + format*2;                      
                 }
                 else{
                     lengthOfOb[locationInArrayPo] = counterLocOb;  
@@ -331,7 +329,7 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
                     obCodeArray[locationInArrayOb]='\0';
                     locationInArrayOb++;
                     strcpy(obCodeArray+locationInArrayOb,writeBuff);
-                    locationInArrayOb= locationInArrayOb + format*2;  
+                    locationInArrayOb= locationInArrayOb + format*2; 
                 }
             }
               
@@ -533,7 +531,11 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
     sprintf(printText, "%06x", PC);
     fputs(printText, fileWriteObProg);
     fputc('\n', fileWriteObProg);
+    lengthOfOb[locationInArrayPo] = counterLocOb;  
+    obCodeArray[locationInArrayOb]='\0';
+    locationInArrayOb++;
     //place the text part into the object program, each line only reaching 30 or less
+    int first1 = 0;
     int y;
     int t;
     int z = syms[0].loc;
@@ -545,13 +547,11 @@ void generateObjectCode(struct opcode *table, struct symbol *syms, char *fileNam
         fputs(printText, fileWriteObProg);
         sprintf(printText, "%02x", lengthOfOb[y]);  //length of this text record line.
         fputs(printText, fileWriteObProg);
-        fputs(obCodeArray+c, fileWriteObProg);
-        //locationInArrayOb=locationInArrayOb+lengthOfOb[y*2]+1;
+        fputs(obCodeArray+c, fileWriteObProg);  //print out the object codes until reach '\0'
         fputc('\n', fileWriteObProg);
         z = z + lengthOfOb[y];
-        c = (c + lengthOfOb[y])*2 +1;
+        c = c + lengthOfOb[y]*2 +1;  //move to next segment of object codes to print out.
     }
-    
     
     for(y = 0; y < modLocCount; y++){
         fputs("M", fileWriteObProg);
