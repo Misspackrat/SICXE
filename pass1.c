@@ -206,7 +206,7 @@ void pass1()
 
 			//checking if opcode is equal to BASE,
 			//if it is then don't print location
-			if ((strcmp(line.opcode, "BASE") == 0) || strcmp(line.opcode, "END") == 0)
+			if ((strcmp(line.opcode, "BASE") == 0)))
 			{
 				base = true; 
 				strcpy(output, line.opcode);
